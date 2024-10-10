@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DevOps ChatBot</title>
+<style>
+body {
+font-family: Arial, sans-serif;
+margin: 0;
+padding: 0;
+background-color: #f5f5f5;
+}
+.chat-container {
+width: 100%;
+max-width: 500px;
+margin: 30px auto;
+border-radius: 10px;
+box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+overflow: hidden;
+background-color: #ffffff;
+}
+  .chat-header {
+background-color: #0078D4;
+color: white;
+padding: 5px 10px;
+text-align: center;
+font-size: 1em;
+}
+.chat-footer {
+background-color: #0078D4;
+padding: 10px;
+display: flex;
+align-items: center;
+justify-content: space-between;
+}
+.chat-body {
+height: 400px;
+overflow-y: auto;
+padding: 10px;
+}
+.message-container {
+margin-bottom: 10px;
+overflow: hidden;
+}
+.message {
+padding: 10px;
+border-radius: 10px;
+max-width: 80%;
+font-size: 0.9em;
+word-wrap: break-word;
+overflow-wrap: break-word;
+}
+.bot-name {
+font-weight: bold;
+font-size: 0.6em;
+color: #0078D4;
+float: left;
+}
+.user-name {
+font-weight: bold;
+font-size: 0.6em;
+color: #4CAF50;
+float: right;
+}
+	
+.timestamp {
+font-size: 0.6em;
+color: #666;
+margin-top: 5px;
+clear: both;
+}
+	
+.bot-message {
+background-color: #F0F0F0;
+float: left;
+color: black;
+width: auto;
+height: auto;
+clear: both;
+}
+	
+.user-message {
+background-color: #DCF8C6;
+float: right;
+color: black;
+width: auto;
+clear: both;
+}
+ #user-name-input {
+flex: 1;
+padding: 10px;
+border: 2px;
+border-radius: 20px;
+font-size: 1em;
+background-color: #f2f2f2;
+margin-top: -90px;
+width:80%;
+outline:none;
+}
+.btn-primary {
+padding: 10px 20px;
+margin: 5px;
+background-color: #4CAF50;
+color: white;
+border: none;
+border-radius: 20px;
+cursor: pointer;
+font-size: 0.9em;
+transition: background-color 0.3s ease;
+outline: none;
+width: calc(33.33% - 10px);
+}
+.btn-primary:hover {
+background-color: #45a049;
+}
+#message-input {
+flex: 1;
+padding: 10px;
+border: none;
+border-radius: 20px;
+font-size: 0.9em;
+background-color: #f2f2f2;
+margin-right: 10px;
+outline: none;
+}
+#name-entry {
+display: flex;
+flex-direction: column;
+align-items: center;
+margin-top: -300px;
+}
+#name-button
+{
+padding: 10px 20px;
+background-color: #025204;
+color: white;
+border: auto;
+border-radius: 20px;
+cursor: pointer;
+font-size: 0.9em;
+margin-top:10px;
+width:80%;
+transition: background-color 0.3s ease;
+outline: auto;
+}
+#send-button {
+padding: 10px 20px;
+background-color: #025204;
+color: white;
+border: none;
+border-radius: 20px;
+cursor: pointer;
+font-size: 0.9em;
+transition: background-color 0.3s ease;
+outline: none;
+}
+#name-button:hover,
+#send-button:hover {
+background-color: #45a049;
+}
+#imageResponseCard {
+display: flex;
+flex-wrap: wrap;
+font-size: 0.9em;
+}
+#imageResponseCard h2,
+#imageResponseCard p,
+#imageResponseCard button {
+width:100%;
+color: black;
+font-size: 1em;
+}
+#imageResponseCard button {
+padding: 5px 10px;
+margin: 3px;
+}
+</style>
+</head>
+<body>
+<div class="chat-container">
+<div class="chat-header">
+<h2>DevOps ChatBot</h2>
+</div>
+<div class="chat-body" id="chat-body">
+<!-- Messages will be appended here -->
+</div>
+<div id="name-entry">
+<input type="text" id="user-name-input" placeholder="Enter your name...">
+<button id="name-button" onclick="setName()">Start Chat</button>
+</div>
+<div class="chat-footer" id="chat-interface" style="display: none;">
+<input type="text" id="message-input" placeholder="Type your message...">
+<button id="send-button" onclick="sendMessage()">Send</button>
+</div>
+</div>
+<script src="https://sdk.amazonaws.com/js/aws-sdk-2.929.0.min.js"></script>
+<script>
+let lex_config={
+bot_mappings:{
+github:{
+botId: 'SE1XOFhIQk5PMg',
+botAliasId: 'TSTALIASID',
+localeId: 'en_US'
+},
+jenkins:{
+botAliasId: 'TSTALIASID',
+botId: 'RjdRWk8yWFRMSg',
+localeId: 'en_US'
+},
+service_now:{
+botAliasId: 'TSTALIASID',
+botId: 'SUw2UkJRQUxQQw',
+localeId: 'en_US'
+}
+},
+region:'ap-southeast-1',
+cognito_pool_id:'NjY1MmRmZmQtNmJmMC00ZmVjLWE0ODctY2Q2ZWI4Yzk0Yjlj'
+}
+document.getElementById("user-name-input").focus();
+var userName;
+var sessionAttributes = {};
+var lexUserId = 'chatbot-demo1' + Date.now();
+var timestamp = new Date().toLocaleTimeString();
+const lexConfig = {
+selectedBot: ""
+};
+function setName() {
+userName = document.getElementById("user-name-input").value.trim();
+if (userName === "") return;
+
+document.getElementById("name-entry").style.display = "none";
+document.getElementById("chat-interface").style.display = "flex";
+var chatBody = document.getElementById("chat-body");
+
+setTimeout(function(){
+displayMessage("Bot", "", timestamp, false, {
+buttons: [
+{ text: "Jenkins", value: "jenkins" },
+{ text: "Github", value: "github" },
+{ text: "Service Now", value: "service_now" },
+{text: "others",value:"others"}
+],
+subtitle: "Please select one of the below options for .",
+title: "Hello " + userName + ", I am your personal Devops bot!"
+});
+}, 1000);
+document.getElementById("message-input").focus();
+}
+const PoolId = atob(lex_config['cognito_pool_id']);
+AWS.config.region = lex_config['region'];
+AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+IdentityPoolId: PoolId
+});
+var lexruntime = new AWS.LexRuntimeV2();
+var lexUserId = 'chatbot-demo1' + Date.now();
+var sessionAttributes = {};
+async function sendMessage(message) {
+
+var messageInput = document.getElementById("message-input");
+if (!message) {
+message = messageInput.value.trim();
+if (message === "") return;
+}
+
+var chatBody = document.getElementById("chat-body");
+var timestamp = new Date().toLocaleTimeString();
+displayMessage("User", message, timestamp)
+try {
+if (message==='jenkins')
+{
+selectedBot=message;
+}
+else if(message==='github')
+{
+selectedBot=message;
+}
+else if(message==='service_now')
+{
+selectedBot=message;
+}
+const bot_id= atob(lex_config['bot_mappings'][selectedBot]['botId']);
+const lexResponse = await lexruntime.recognizeText({
+botId: bot_id,
+botAliasId: lex_config['bot_mappings'][selectedBot]['botAliasId'],
+localeId: 'en_US',
+sessionId: lexUserId,
+text: message,
+sessionState: {
+sessionAttributes: sessionAttributes,
+}
+}).promise();
+sessionAttributes = lexResponse.sessionState.sessionAttributes || {};
+console.log(lexResponse);
+
+if (lexResponse.messages[0].contentType === "ImageResponseCard") {
+displayMessage("Bot", lexResponse.messages[0].content, timestamp, true, lexResponse.messages[0].imageResponseCard);
+} else {
+displayMessage("Bot", lexResponse.messages[0].content, timestamp);
+console.log(message);
+}
+
+} catch (error) {
+console.log(error);
+displayMessage("Bot", "Looks like i did not get you. Could you please raise a request here to connect to a DevOps representative.", timestamp, true);
+}
+messageInput.value = "";
+chatBody.scrollTop = chatBody.scrollHeight;
+}
+
+function displayMessage(sender, message, timestamp, isError = false, imageResponseCard,
+          lexResponse) {
+var chatBody = document.getElementById("chat-body");
+var messageContainer = document.createElement("div");
+messageContainer.classList.add("message-container");
+
+  var timestampElement = document.createElement("div");
+timestampElement.textContent = timestamp;
+timestampElement.classList.add("timestamp");
+var name = document.createElement("div");
+name.textContent = sender === "Bot" ? "DevOpsBot " + timestamp : userName + " " + timestamp;
+name.classList.add("message", sender === "Bot" ? "bot-name" : "user-name");
+messageContainer.appendChild(name);
+
+var messageElement = document.createElement("div");
+messageElement.classList.add("message", sender === "Bot" ? "bot-message" : "user-message");
+if (imageResponseCard) {
+// Create card elements
+var cardDiv = document.createElement('div');
+cardDiv.id = 'imageResponseCard';
+var titleElement = document.createElement('h2');
+titleElement.textContent = imageResponseCard.title;
+cardDiv.appendChild(titleElement);
+var subtitleElement = document.createElement('p');
+subtitleElement.textContent = imageResponseCard.subtitle;
+cardDiv.appendChild(subtitleElement);
+// Create and append buttons
+imageResponseCard.buttons.forEach(function (buttonData) {
+var button = document.createElement('button');
+button.textContent = buttonData.text;
+button.value = buttonData.value;
+button.classList.add('btn-primary');
+button.addEventListener('click', function () {
+handleButtonClick(buttonData.value);
+});
+cardDiv.appendChild(button);
+});
+
+messageElement.appendChild(cardDiv);
+} else {
+messageElement.textContent = message;
+}
+
+if (isError && sender === "Bot") {
+messageElement.style.color = "red";
+// messageElement.innerHTML += "<br><button class='btn btn-primary' onclick='resetChat()'>Reset Chat</button>"; // Include reset option for errors
+}
+messageContainer.appendChild(messageElement);
+
+if (lexResponse && lexResponse.dialogState === 'ReadyForFulfillment') {
+  var responsePara = document.createElement("p");
+responsePara.textContent = "Ready for fulfillment";
+messageContainer.appendChild(responsePara);
+console.log("message:" + JSON.stringify(lexResponse));
+}
+chatBody.appendChild(messageContainer);
+}
+
+function handleButtonClick(value) {
+console.log("Button clicked: " + value);
+sendMessage(value);
+}
+</script>
+</body>
+</html>

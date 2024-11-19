@@ -28,3 +28,5 @@ sudo systemctl start jenkins
 # Output Jenkins status
 echo "Checking Jenkins status..."
 sudo systemctl status jenkins --no-pager
+
+# sudo cat /var/lib/jenkins/secrets/initialAdminPassword

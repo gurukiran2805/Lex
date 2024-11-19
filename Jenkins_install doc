@@ -1,16 +1,30 @@
+#!/bin/bash
+# Update the system packages
+sudo dnf update -y
 
-sudo dnf update
+# Install Amazon Corretto 17 (Java 17)
 sudo dnf install java-17-amazon-corretto -y
 
-sudo wget -O /etc/yum.repos.d/jenkins.repo \
-   https://pkg.jenkins.io/redhat-stable/jenkins.repo
+# Add the Jenkins repository
+echo "Adding Jenkins repository..."
+sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
 
+# Import the Jenkins GPG key
+echo "Importing Jenkins GPG key..."
 sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
 
+# Install Jenkins
+echo "Installing Jenkins..."
 sudo dnf install jenkins -y
 
+# Enable Jenkins service to start on boot
+echo "Enabling Jenkins to start on boot..."
 sudo systemctl enable jenkins
+
+# Start the Jenkins service
+echo "Starting Jenkins..."
 sudo systemctl start jenkins
 
-
-sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+# Output Jenkins status
+echo "Checking Jenkins status..."
+sudo systemctl status jenkins --no-pager
